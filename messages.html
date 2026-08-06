@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Messages - Campus Skill Exchange</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+</head>
+<body class="min-h-screen bg-slate-900 text-slate-100">
+  <header class="p-6 flex justify-between items-center"><h1 class="text-xl font-bold">Messages</h1><a href="dashboard.html" class="px-3 py-1 border rounded">Back</a></header>
+  <main class="max-w-6xl mx-auto p-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div class="md:col-span-1 bg-slate-800 p-4 rounded">
+      <h3 class="font-semibold mb-3">Conversations</h3>
+      <div id="convs" class="space-y-2"></div>
+    </div>
+    <div class="md:col-span-2 bg-slate-800 p-4 rounded flex flex-col">
+      <div id="chatHeader" class="font-semibold"></div>
+      <div id="messagesWindow" class="flex-1 overflow-auto mt-3 space-y-2"></div>
+      <form id="sendForm" class="mt-3 flex">
+        <input id="msgInput" class="flex-1 p-2 rounded bg-slate-900" placeholder="Write a message..." />
+        <button class="ml-2 bg-emerald-500 px-4 py-2 rounded text-slate-900">Send</button>
+      </form>
+<nav class="space-x-4">
+      <a href="index.html" class="hover:underline">Home</a>
+      <a href="login.html" class="bg-emerald-500 px-4 py-2 rounded text-slate-900 font-semibold">Login</a>
+      <a href="register.html" class="hover:underline">register</a>
+      <a href="dashboard.html" "hover:underline">dashboard</a>
+      <a href="post-skill.html" class="hover:underline">post-skill</a>
+      <a href="browser-skills.html" class="hover:underline">browser-skills</a>
+      <a href="skill-detail.html" class="hover:underline">skill-detail</a>
+      <a href=profile.html" class="hover:underline">profile</a>
+      <a href="message.html" class="hover:underline">message</a>
+      <a href="notifications.html" class="hover:underline">notifications</a>
+      <a href="setting.html" class="hover:underline">setting</a>
+      <a href="admin-dashboard.html" class="hover:underline">admin-dashboard</a>
+      <a href="admin-users.html" class="hover:underline">admin-users</a>
+      <a href="admin-skills.html" class="hover:underline">admin-skills</a>
+      <a href="about.html" class="hover:underline">about</a>
+      <a href="terms.html" class="hover:underline">terms</a>
+    </nav>
+    </div>
+  </main>
+
+  <script>
+    // Firebase config - REPLACE
+    const firebaseConfig = {
+      apiKey: "AIzaSyB6z6HRLZm8UWQuQPDlEDIK2O5LDUYG0l4",
+  authDomain: "backend-python-database.firebaseapp.com",
+  databaseURL: "https://backend-python-database-default-rtdb.firebaseio.com",
+  projectId: "backend-python-database",
+    };
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.database();
+
+    let currentConv = null;
+    auth.onAuthStateChanged(async user => {
+      if (!user) return location.href='login.html';
+      const uid = user.uid;
+      // List conversations where user is a participant
+      db.ref('conversations').orderByChild('meta/participants/' + uid).equalTo(true).on('value', snap => {
+        const data = snap.val() || {};
+        const convs = document.getElementById('convs');
+        convs.innerHTML = '';
+        Object.entries(data).forEach(([id, conv]) => {
+          const last = (conv.meta && conv.meta.lastAt) ? new Date(conv.meta.lastAt).toLocaleString() : '';
+          const el = document.createElement('div');
+          el.className = 'p-2 rounded hover:bg-slate-700 cursor-pointer';
+          el.textContent = `Conversation ${id.split('_').filter(x=>x!==uid)[0] || id} • ${last}`;
+          el.addEventListener('click', ()=> openConv(id, conv));
+          convs.appendChild(el);
+        });
+      });
+    });
+
+    function openConv(id, convMeta) {
+      currentConv = id;
+      document.getElementById('chatHeader').textContent = 'Conversation: ' + id;
+      const msgsWindow = document.getElementById('messagesWindow');
+      db.ref('conversations/' + id + '/messages').on('value', snap => {
+        msgsWindow.innerHTML = '';
+        const data = snap.val() || {};
+        Object.entries(data).forEach(([mid, m]) => {
+          const el = document.createElement('div');
+          el.className = 'p-2 rounded bg-slate-900';
+          el.innerHTML = `<div class="text-sm text-slate-400">${new Date(m.at).toLocaleString()}</div><div>${escapeHtml(m.text)}</div>`;
+          msgsWindow.appendChild(el);
+        });
+        msgsWindow.scrollTop = msgsWindow.scrollHeight;
+      });
+    }
+
+    document.getElementById('sendForm').addEventListener('submit', async e=>{
+      e.preventDefault();
+      const user = auth.currentUser;
+      if (!user) return location.href='login.html';
+      if (!currentConv) return alert('Select a conversation');
+      const text = document.getElementById('msgInput').value.trim();
+      if (!text) return;
+      const pushRef = db.ref('conversations/' + currentConv + '/messages').push();
+      await pushRef.set({ from: user.uid, text, at: Date.now() });
+      await db.ref('conversations/' + currentConv + '/meta').update({ lastAt: Date.now() });
+      document.getElementById('msgInput').value = '';
+    });
+
+    function escapeHtml(s='') { return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]); }
+  </script>
+</body>
+</html>

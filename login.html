@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Login - Campus Skill Exchange</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>body{background:#0f172a;}</style>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+</head>
+<body class="min-h-screen flex items-center justify-center text-slate-100">
+  <div class="max-w-md w-full bg-slate-800 p-8 rounded shadow">
+    <h2 class="text-2xl font-bold mb-4">Sign in</h2>
+    <form id="loginForm" class="space-y-4">
+      <div><label class="block text-sm">Email</label><input id="email" type="email" required class="w-full mt-1 p-2 rounded bg-slate-900"></div>
+      <div><label class="block text-sm">Password</label><input id="password" type="password" required class="w-full mt-1 p-2 rounded bg-slate-900"></div>
+      <div class="flex items-center justify-between">
+        <button type="submit" class="bg-emerald-500 px-4 py-2 rounded text-slate-900 font-semibold">Login</button>
+        <a href="register.html" class="text-sm text-slate-300 hover:underline">Create account</a>
+      </div>
+    </form>
+    <p id="err" class="mt-4 text-sm text-rose-400"></p>
+  </div>
+
+  <script>
+    // Firebase config - REPLACE
+    const firebaseConfig = {
+      apiKey: "REPLACE_API_KEY",
+      authDomain: "REPLACE_AUTH_DOMAIN",
+      databaseURL: "REPLACE_DATABASE_URL",
+      projectId: "REPLACE_PROJECT_ID",
+    };
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.database();
+
+    // On login, check role and redirect
+    document.getElementById('loginForm').addEventListener('submit', async e => {
+      e.preventDefault();
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
+      try {
+        const cred = await auth.signInWithEmailAndPassword(email, password);
+        const uid = cred.user.uid;
+        const snap = await db.ref('users/' + uid + '/role').get();
+        const role = snap.exists() ? snap.val() : 'student';
+        if (role === 'admin') {
+          window.location.href = 'admin-dashboard.html';
+        } else {
+          window.location.href = 'dashboard.html';
+        }
+      } catch (err) {
+        document.getElementById('err').textContent = err.message;
+      }
+    });
+
+    // If already logged in, redirect appropriately
+    auth.onAuthStateChanged(async user => {
+      if (!user) return;
+      const snap = await db.ref('users/' + user.uid + '/role').get();
+      const role = snap.exists() ? snap.val() : 'student';
+      window.location.href = role === 'admin' ? 'admin-dashboard.html' : 'dashboard.html';
+    });
+  </script>
+</body>
+</html>

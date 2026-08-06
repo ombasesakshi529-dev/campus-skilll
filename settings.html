@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Settings - Campus Skill Exchange</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+</head>
+<body class="min-h-screen bg-slate-900 text-slate-100">
+  <header class="p-6 flex justify-between items-center"><h1 class="text-xl font-bold">Settings</h1><a href="dashboard.html" class="px-3 py-1 border rounded">Back</a></header>
+  <main class="max-w-3xl mx-auto p-6">
+    <div class="bg-slate-800 p-6 rounded">
+      <h2 class="font-semibold mb-3">Account</h2>
+      <div class="space-y-3">
+        <button id="changePwd" class="px-4 py-2 border rounded">Change Password</button>
+        <button id="deleteAcc" class="px-4 py-2 border rounded text-rose-400">Delete Account</button>
+    <nav class="space-x-4">
+      <a href="index.html" class="hover:underline">Home</a>
+      <a href="login.html" class="bg-emerald-500 px-4 py-2 rounded text-slate-900 font-semibold">Login</a>
+      <a href="register.html" class="hover:underline">register</a>
+      <a href="dashboard.html" "hover:underline">dashboard</a>
+      <a href="post-skill.html" class="hover:underline">post-skill</a>
+      <a href="browser-skills.html" class="hover:underline">browser-skills</a>
+      <a href="skill-detail.html" class="hover:underline">skill-detail</a>
+      <a href=profile.html" class="hover:underline">profile</a>
+      <a href="message.html" class="hover:underline">message</a>
+      <a href="notifications.html" class="hover:underline">notifications</a>
+      <a href="setting.html" class="hover:underline">setting</a>
+      <a href="admin-dashboard.html" class="hover:underline">admin-dashboard</a>
+      <a href="admin-users.html" class="hover:underline">admin-users</a>
+      <a href="admin-skills.html" class="hover:underline">admin-skills</a>
+      <a href="about.html" class="hover:underline">about</a>
+      <a href="terms.html" class="hover:underline">terms</a>
+    </nav> 
+ </div>
+      <p id="msg" class="mt-3 text-sm"></p>
+    </div>
+  </main>
+
+  <script>
+    // Firebase config - REPLACE
+    const firebaseConfig = {
+      apiKey: "AIzaSyB6z6HRLZm8UWQuQPDlEDIK2O5LDUYG0l4",
+  authDomain: "backend-python-database.firebaseapp.com",
+  databaseURL: "https://backend-python-database-default-rtdb.firebaseio.com",
+  projectId: "backend-python-database",
+    };
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.database();
+
+    auth.onAuthStateChanged(user => {
+      if (!user) return location.href='login.html';
+    });
+
+    document.getElementById('changePwd').addEventListener('click', async ()=>{
+      const user = auth.currentUser;
+      if(!user) return location.href='login.html';
+      const newPwd = prompt('Enter new password (min 6 chars):');
+      if (!newPwd) return;
+      try { await user.updatePassword(newPwd); document.getElementById('msg').textContent = 'Password updated'; }
+      catch(err) { document.getElementById('msg').textContent = err.message; }
+    });
+
+    document.getElementById('deleteAcc').addEventListener('click', async ()=>{
+      const user = auth.currentUser;
+      if(!user) return location.href='login.html';
+      if (!confirm('Are you sure? This cannot be undone.')) return;
+      try {
+        // Remove user profile and their skills
+        await db.ref('users/' + user.uid).remove();
+        const skSnap = await db.ref('skills').orderByChild('authorId').equalTo(user.uid).once('value');
+        const sks = skSnap.val() || {};
+        for (const id of Object.keys(sks)) await db.ref('skills/' + id).remove();
+        await user.delete();
+        alert('Account deleted');
+        location.href='index.html';
+      } catch (err) {
+        document.getElementById('msg').textContent = err.message;
+      }
+    });
+  </script>
+</body>
+</html>

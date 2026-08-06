@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Admin Dashboard - Campus Skill Exchange</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+</head>
+<body class="min-h-screen bg-slate-900 text-slate-100">
+  <header class="p-6 flex justify-between items-center">
+    <h1 class="text-xl font-bold">Admin Dashboard</h1>
+    <div class="space-x-2">
+      <a href="admin-users.html" class="px-3 py-1 border rounded">Users</a>
+      <a href="admin-skills.html" class="px-3 py-1 border rounded">Skills</a>
+      <button id="logout" class="px-3 py-1 border rounded">Logout</button>
+   <nav class="space-x-4">
+      <a href="index.html" class="hover:underline">Home</a>
+      <a href="login.html" class="bg-emerald-500 px-4 py-2 rounded text-slate-900 font-semibold">Login</a>
+      <a href="register.html" class="hover:underline">register</a>
+      <a href="dashboard.html" "hover:underline">dashboard</a>
+      <a href="post-skill.html" class="hover:underline">post-skill</a>
+      <a href="browser-skills.html" class="hover:underline">browser-skills</a>
+      <a href="skill-detail.html" class="hover:underline">skill-detail</a>
+      <a href=profile.html" class="hover:underline">profile</a>
+      <a href="message.html" class="hover:underline">message</a>
+      <a href="notifications.html" class="hover:underline">notifications</a>
+      <a href="setting.html" class="hover:underline">setting</a>
+      <a href="admin-dashboard.html" class="hover:underline">admin-dashboard</a>
+      <a href="admin-users.html" class="hover:underline">admin-users</a>
+      <a href="admin-skills.html" class="hover:underline">admin-skills</a>
+      <a href="about.html" class="hover:underline">about</a>
+      <a href="terms.html" class="hover:underline">terms</a>
+    </nav>
+ </div>
+  </header>
+
+  <main class="p-6 max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div class="bg-slate-800 p-4 rounded">
+      <h2 class="font-semibold">Overview</h2>
+      <div id="stats" class="mt-3 text-slate-300"></div>
+    </div>
+    <div class="bg-slate-800 p-4 rounded">
+      <h2 class="font-semibold">Recent Activity</h2>
+      <div id="activity" class="mt-3 text-slate-300"></div>
+    </div>
+  </main>
+
+  <script>
+    // Firebase config - REPLACE
+    const firebaseConfig = {
+     apiKey: "AIzaSyB6z6HRLZm8UWQuQPDlEDIK2O5LDUYG0l4",
+  authDomain: "backend-python-database.firebaseapp.com",
+  databaseURL: "https://backend-python-database-default-rtdb.firebaseio.com",
+  projectId: "backend-python-database",
+    };
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.database();
+
+    document.getElementById('logout').addEventListener('click', ()=>auth.signOut().then(()=>location.href='index.html'));
+
+    auth.onAuthStateChanged(async user=>{
+      if(!user) return location.href='login.html';
+      const roleSnap = await db.ref('users/' + user.uid + '/role').get();
+      if (!roleSnap.exists() || roleSnap.val() !== 'admin') return alert('Not authorized') && location.href='login.html';
+      loadStats();
+    });
+
+    async function loadStats() {
+      const usersSnap = await db.ref('users').once('value'), skillsSnap = await db.ref('skills').once('value');
+      const usersCount = usersSnap.exists() ? Object.keys(usersSnap.val()).length : 0;
+      const skillsCount = skillsSnap.exists() ? Object.keys(skillsSnap.val()).length : 0;
+      document.getElementById('stats').innerHTML = `Users: ${usersCount}<br/>Skills: ${skillsCount}`;
+      // Simple recent activity: latest skills
+      const recent = skillsSnap.val() ? Object.entries(skillsSnap.val()).sort((a,b)=>b[1].createdAt - a[1].createdAt).slice(0,5) : [];
+      const act = document.getElementById('activity');
+      act.innerHTML = recent.map(([id, s]) => `<div class="p-2 rounded bg-slate-900 mb-2">${escapeHtml(s.title)} • ${escapeHtml(s.authorName || '')}</div>`).join('');
+    }
+
+    function escapeHtml(s='') { return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]); }
+  </script>
+</body>
+</html>

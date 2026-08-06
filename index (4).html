@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Campus Skill Exchange - Home</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    /* Custom CSS */
+    .hero { background: linear-gradient(90deg,#0ea5a4, #7c3aed); }
+    .card { background: rgba(255,255,255,0.06); backdrop-filter: blur(6px); }
+  </style>
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+</head>
+<body class="min-h-screen bg-slate-900 text-slate-100">
+  <header class="p-6 flex items-center justify-between">
+    <h1 class="text-2xl font-bold">Campus Skill Exchange</h1>
+    <nav class="space-x-4">
+      <a href="index.html" class="hover:underline">Home</a>
+      <a href="browse-skills.html" class="hover:underline">Browse Skills</a>
+      <a href="about.html" class="hover:underline">About</a>
+      <a href="login.html" class="bg-emerald-500 px-4 py-2 rounded text-slate-900 font-semibold">Login</a>
+    </nav>
+  </header>
+
+  <main class="hero text-white py-20 px-6">
+    <div class="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+      <div>
+        <h2 class="text-4xl font-extrabold mb-4">Learn, Teach, and Swap Skills on Campus</h2>
+        <p class="mb-6 text-slate-200">Post skills you can teach, search skills you'd like to learn, message peers, and build community-driven learning.</p>
+        <div class="space-x-3">
+          <a href="register.html" class="bg-white text-slate-900 px-6 py-3 rounded font-semibold">Get Started</a>
+          <a href="browse-skills.html" class="border border-white px-6 py-3 rounded">Browse Skills</a>
+        </div>
+      </div>
+      <div class="card p-6 rounded-lg shadow-lg">
+        <h3 class="text-xl font-bold mb-3">Featured Skills</h3>
+        <div id="featuredList" class="space-y-3">
+          <!-- Filled by JS -->
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="p-6 text-center text-slate-400">© Campus Skill Exchange</footer>
+
+  <script>
+    // Firebase config - REPLACE with your project's config
+    const firebaseConfig = {
+      apiKey: "REPLACE_API_KEY",
+      authDomain: "REPLACE_AUTH_DOMAIN",
+      databaseURL: "REPLACE_DATABASE_URL",
+      projectId: "REPLACE_PROJECT_ID",
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    // Load featured skills (most recent 4)
+    const featuredList = document.getElementById('featuredList');
+    db.ref('skills').orderByChild('createdAt').limitToLast(4).on('value', snapshot => {
+      featuredList.innerHTML = '';
+      const data = snapshot.val();
+      if (!data) {
+        featuredList.innerHTML = '<div class="text-slate-300">No skills yet. Be the first to post!</div>';
+        return;
+      }
+      const items = Object.entries(data).reverse();
+      items.forEach(([id, s]) => {
+        const el = document.createElement('div');
+        el.className = 'p-3 rounded bg-gradient-to-r from-slate-800 to-slate-900';
+        el.innerHTML = `<div class="flex justify-between items-center"><div>
+            <div class="font-semibold">${escapeHtml(s.title)}</div>
+            <div class="text-sm text-slate-400">${escapeHtml(s.category || 'General')} • by ${escapeHtml(s.authorName || 'Unknown')}</div>
+          </div>
+          <a href="skill-detail.html?id=${id}" class="text-emerald-400 hover:underline">View</a>
+        </div>`;
+        featuredList.appendChild(el);
+      });
+    });
+
+    function escapeHtml(str='') {
+      return String(str).replace(/[&<>"']/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s]));
+    }
+  </script>
+</body>
+</html>

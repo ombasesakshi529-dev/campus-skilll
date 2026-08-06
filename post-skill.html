@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Post Skill - Campus Skill Exchange</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+</head>
+<body class="min-h-screen bg-slate-900 text-slate-100">
+  <header class="p-6 flex justify-between items-center">
+    <h1 class="text-xl font-bold">Post a Skill</h1>
+    <a href="dashboard.html" class="px-3 py-1 border rounded">Back</a>
+  </header>
+
+  <main class="max-w-3xl mx-auto p-6">
+    <form id="skillForm" class="space-y-4 bg-slate-800 p-6 rounded">
+      <div><label class="block text-sm">Title</label><input id="title" required class="w-full mt-1 p-2 rounded bg-slate-900"></div>
+      <div><label class="block text-sm">Category</label><input id="category" class="w-full mt-1 p-2 rounded bg-slate-900"></div>
+      <div><label class="block text-sm">Description</label><textarea id="desc" rows="6" class="w-full mt-1 p-2 rounded bg-slate-900"></textarea></div>
+      <div class="flex justify-between items-center">
+        <button class="bg-emerald-500 px-4 py-2 rounded text-slate-900 font-semibold">Publish</button>
+        <span id="status" class="text-sm text-slate-300"></span>
+<nav class="space-x-4">
+      <a href="index.html" class="hover:underline">Home</a>
+      <a href="login.html" class="bg-emerald-500 px-4 py-2 rounded text-slate-900 font-semibold">Login</a>
+      <a href="register.html" class="hover:underline">register</a>
+      <a href="dashboard.html" "hover:underline">dashboard</a>
+      <a href="post-skill.html" class="hover:underline">post-skill</a>
+      <a href="browser-skills.html" class="hover:underline">browser-skills</a>
+      <a href="skill-detail.html" class="hover:underline">skill-detail</a>
+      <a href=profile.html" class="hover:underline">profile</a>
+      <a href="message.html" class="hover:underline">message</a>
+      <a href="notifications.html" class="hover:underline">notifications</a>
+      <a href="setting.html" class="hover:underline">setting</a>
+      <a href="admin-dashboard.html" class="hover:underline">admin-dashboard</a>
+      <a href="admin-users.html" class="hover:underline">admin-users</a>
+      <a href="admin-skills.html" class="hover:underline">admin-skills</a>
+      <a href="about.html" class="hover:underline">about</a>
+      <a href="terms.html" class="hover:underline">terms</a>
+    </nav>
+      </div>
+    </form>
+  </main>
+
+  <script>
+    // Firebase config - REPLACE
+    const firebaseConfig = {
+      apiKey: "AIzaSyB6z6HRLZm8UWQuQPDlEDIK2O5LDUYG0l4",
+  authDomain: "backend-python-database.firebaseapp.com",
+  databaseURL: "https://backend-python-database-default-rtdb.firebaseio.com",
+  projectId: "backend-python-database",
+    };
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.database();
+
+    auth.onAuthStateChanged(user => {
+      if (!user) return location.href='login.html';
+    });
+
+    document.getElementById('skillForm').addEventListener('submit', async e => {
+      e.preventDefault();
+      const user = auth.currentUser;
+      if(!user) return alert('Please log in');
+      const title = document.getElementById('title').value.trim();
+      const category = document.getElementById('category').value.trim();
+      const desc = document.getElementById('desc').value.trim();
+      const skillRef = db.ref('skills').push();
+      await skillRef.set({
+        title, category, description: desc,
+        authorId: user.uid, authorName: (user.displayName || user.email),
+        createdAt: Date.now()
+      });
+      document.getElementById('status').textContent = 'Published!';
+      setTimeout(() => location.href = 'dashboard.html', 900);
+    });
+  </script>
+</body>
+</html>
